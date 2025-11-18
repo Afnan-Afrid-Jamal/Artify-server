@@ -22,15 +22,14 @@ async function run() {
   try {
     await client.connect();
 
-
-
+    const database = client.db("artifyDB");
+    const movies = database.collection("artworks");
 
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-
     // await client.close();
   }
 }
