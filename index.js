@@ -23,7 +23,39 @@ async function run() {
     await client.connect();
 
     const database = client.db("artifyDB");
-    const movies = database.collection("artworks");
+    const artworkCollection = database.collection("artworks");
+
+    // Get Data(likes count)
+    app.get("/trending-artwork", async (req, res) => {
+      try {
+        const result = await artworkCollection
+          .find()
+          .sort({ likesCount: -1 })
+          .limit(6)
+          .toArray();
+
+        res.status(200).json(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    // Get Data(most recent)
+    app.get("/most-recent", async (req, res) => {
+      try {
+        const result = await artworkCollection
+          .find({}) // find() function ব্যবহার করা হচ্ছে
+          .sort({ createdAt: -1 }) // সর্বশেষ ক্রিয়েটেড আগে আসবে
+          .limit(6)
+          .toArray();
+
+        res.status(200).json(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -34,10 +66,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-app.get("/", (req, res) => {
-  res.send("Server running...");
-});
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
