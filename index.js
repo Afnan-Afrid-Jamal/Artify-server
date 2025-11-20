@@ -95,6 +95,42 @@ async function run() {
       }
     });
 
+    // Likes Count
+
+    app.patch("/all-artworks/:id/like", async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ message: "Invalid artwork ID" });
+        }
+
+        const artwork = await artworkCollection.findOne({
+          _id: new ObjectId(id),
+        });
+
+        if (!artwork) {
+          return res.status(404).json({ message: "Artwork not found" });
+        }
+
+        // likes count increment
+        await artworkCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $inc: { likesCount: 1 } }
+        );
+
+        // updated document again fetch
+        const updatedArtwork = await artworkCollection.findOne({
+          _id: new ObjectId(id),
+        });
+
+        res.status(200).json(updatedArtwork);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
