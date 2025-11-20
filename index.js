@@ -25,8 +25,20 @@ async function run() {
     const database = client.db("artifyDB");
     const artworkCollection = database.collection("artworks");
 
+    // Get Data(all artworks)
+
+    app.get("/all-artworks", async (req, res) => {
+      try {
+        const result = await artworkCollection.find().toArray();
+        res.status(200).json(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
     // Get Data(likes count)
-    app.get("/trending-artwork", async (req, res) => {
+    app.get("/all-artworks/trending-artwork", async (req, res) => {
       try {
         const result = await artworkCollection
           .find()
@@ -42,15 +54,41 @@ async function run() {
     });
 
     // Get Data(most recent)
-    app.get("/most-recent", async (req, res) => {
+    app.get("/all-artworks/most-recent", async (req, res) => {
       try {
         const result = await artworkCollection
-          .find({}) // find() function ব্যবহার করা হচ্ছে
-          .sort({ createdAt: -1 }) // সর্বশেষ ক্রিয়েটেড আগে আসবে
+          .find({})
+          .sort({ createdAt: -1 })
           .limit(6)
           .toArray();
 
         res.status(200).json(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    // Get Data(view details)
+    const { ObjectId } = require("mongodb");
+
+    app.get("/all-artworks/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ message: "Invalid artwork ID" });
+        }
+
+        const result = await artworkCollection.findOne({
+          _id: new ObjectId(id),
+        });
+
+        if (!result) {
+          return res.status(404).json({ message: "Artwork not found" });
+        } else {
+          res.status(200).json(result);
+        }
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
