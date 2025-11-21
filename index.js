@@ -24,6 +24,7 @@ async function run() {
 
     const database = client.db("artifyDB");
     const artworkCollection = database.collection("artworks");
+    const favouritesCollection = database.collection("favouritesArtworks");
 
     // Get Data(all artworks)
 
@@ -91,6 +92,20 @@ async function run() {
         .find({ title: { $regex: searchedText, $options: "i" } })
         .toArray();
       res.send(result);
+    });
+
+    // Add Favourite
+    app.post("/favourites", async (req, res) => {
+      try {
+        const data = req.body;
+        const result = await favouritesCollection.insertOne(data);
+        res.status(201).send({ success: true, insertedId: result.insertedId });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to add to favourites" });
+      }
     });
 
     // Get Data(view details)
