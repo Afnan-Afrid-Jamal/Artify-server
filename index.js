@@ -69,6 +69,30 @@ async function run() {
       }
     });
 
+    // Explore artworks (public)
+
+    app.get("/all-artworks/public", async (req, res) => {
+      try {
+        const result = await artworkCollection
+          .find({ visibility: "Public" })
+          .toArray();
+        res.status(200).json(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    // Search by title API
+
+    app.get("/all-artworks/search", async (req, res) => {
+      const searchedText = req.query.search;
+      const result = await artworkCollection
+        .find({ title: { $regex: searchedText, $options: "i" } })
+        .toArray();
+      res.send(result);
+    });
+
     // Get Data(view details)
     const { ObjectId } = require("mongodb");
 
