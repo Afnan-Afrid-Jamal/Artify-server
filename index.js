@@ -108,6 +108,14 @@ async function run() {
       }
     });
 
+    // Add Artworks
+
+    app.post("/all-artworks", async (req, res) => {
+      const artworkData = req.body;
+      const result = await artworkCollection.insertOne(artworkData);
+      res.send(result);
+    });
+
     // Get Data(view details)
     const { ObjectId } = require("mongodb");
 
