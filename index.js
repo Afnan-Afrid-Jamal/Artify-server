@@ -102,9 +102,24 @@ async function run() {
         res.status(201).send({ success: true, insertedId: result.insertedId });
       } catch (error) {
         console.error(error);
-        res
-          .status(500)
-          .send({ success: false, message: "Failed to add to favourites" });
+        res.status(500).send({
+          success: false,
+          message: "Failed to add to favourites",
+        });
+      }
+    });
+
+    // Get Favourites Data
+    app.get("/favourites-data", async (req, res) => {
+      try {
+        const result = await favouritesCollection.find().toArray();
+        res.status(200).send({ success: true, data: result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({
+          success: false,
+          message: "Failed to fetch favourites data",
+        });
       }
     });
 
