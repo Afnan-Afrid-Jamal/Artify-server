@@ -123,6 +123,20 @@ async function run() {
       }
     });
 
+    // Delete Favorite Data
+    app.delete("/delete-favorite-artwork/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await favouritesCollection.deleteOne(query);
+
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to delete favorite artwork" });
+      }
+    });
+
     // Add Artworks
 
     app.post("/all-artworks", async (req, res) => {
