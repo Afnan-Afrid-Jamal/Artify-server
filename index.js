@@ -112,7 +112,10 @@ async function run() {
     // Get Favourites Data
     app.get("/favourites-data", async (req, res) => {
       try {
-        const result = await favouritesCollection.find().toArray();
+        const email = req.query.email;
+        const result = await favouritesCollection
+          .find({ userEmail: email })
+          .toArray();
         res.status(200).send({ success: true, data: result });
       } catch (error) {
         console.error(error);
@@ -123,17 +126,31 @@ async function run() {
       }
     });
 
-    // Delete Favorite Data
-    app.delete("/delete-favorite-artwork/:id", async (req, res) => {
-      try {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await favouritesCollection.deleteOne(query);
+    // Unfavourite artwork
 
-        res.send(result);
+    app.delete("/unfavourite/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const result = await favouritesCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        if (result.deletedCount === 1) {
+          res.status(200).send({
+            success: true,
+            message: "Artwork removed from favourites",
+          });
+        } else {
+          res
+            .status(404)
+            .send({ success: false, message: "Artwork not found" });
+        }
       } catch (error) {
         console.error(error);
-        res.status(500).send({ message: "Failed to delete favorite artwork" });
+        res.status(500).send({
+          success: false,
+          message: "Failed to remove artwork from favourites",
+        });
       }
     });
 
@@ -142,6 +159,48 @@ async function run() {
     app.post("/all-artworks", async (req, res) => {
       const artworkData = req.body;
       const result = await artworkCollection.insertOne(artworkData);
+      res.send(result);
+    });
+
+    // Delete Artworks
+    app.delete("/delete-artworks/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const result = await artworkCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        if (result.deletedCount === 1) {
+          res.status(200).send({
+            success: true,
+            message: "Artwork deleted successfully",
+          });
+        } else {
+          res.status(404).send({
+            success: false,
+            message: "Artwork not found",
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({
+          success: false,
+          message: "Failed to delete artwork",
+          error: error.message,
+        });
+      }
+    });
+
+    // Update Artwork
+
+    app.put("/update-artwork/:id", async (req, res) => {
+      const { id } = req.params;
+      const data = req.body;
+      const objectId = { _id: new ObjectId(id) };
+      const finalData = {
+        $set: data,
+      };
+      const result = await artworkCollection.updateOne(objectId, finalData);
       res.send(result);
     });
 
@@ -168,6 +227,24 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    // My Gallery
+
+    app.get("/my-gallery", async (req, res) => {
+      try {
+        const email = req.query.email;
+        const result = await artworkCollection
+          .find({ artistEmail: email })
+          .toArray();
+        res.status(200).send({ success: true, data: result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({
+          success: false,
+          message: "Failed to fetch my gallery page data",
+        });
       }
     });
 
