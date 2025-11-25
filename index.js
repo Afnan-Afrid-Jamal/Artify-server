@@ -248,38 +248,27 @@ async function run() {
       }
     });
 
-    // Likes Count
-
     app.patch("/all-artworks/:id/like", async (req, res) => {
       try {
-        const { id } = req.params;
+        const id = req.params.id;
+        const { action } = req.body; // "inc" or "dec"
 
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).json({ message: "Invalid artwork ID" });
-        }
+        if (!ObjectId.isValid(id))
+          return res.status(400).json({ message: "Invalid ID" });
 
-        const artwork = await artworkCollection.findOne({
-          _id: new ObjectId(id),
-        });
+        const value = action === "dec" ? -1 : 1;
 
-        if (!artwork) {
-          return res.status(404).json({ message: "Artwork not found" });
-        }
-
-        // likes count increment
-        await artworkCollection.updateOne(
+        const result = await artworkCollection.findOneAndUpdate(
           { _id: new ObjectId(id) },
-          { $inc: { likesCount: 1 } }
+          { $inc: { likesCount: value } },
+          { returnDocument: "after" }
         );
 
-        // updated document again fetch
-        const updatedArtwork = await artworkCollection.findOne({
-          _id: new ObjectId(id),
-        });
+        if (!result)
+          return res.status(404).json({ message: "Artwork not found" });
 
-        res.status(200).json(updatedArtwork);
+        res.status(200).json(result);
       } catch (error) {
-        console.error(error);
         res.status(500).json({ message: "Server error" });
       }
     });
