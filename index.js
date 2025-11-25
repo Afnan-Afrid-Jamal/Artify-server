@@ -38,7 +38,7 @@ async function run() {
       }
     });
 
-    // Get Data(likes count)
+    // Get Data(most liked)
     app.get("/all-artworks/trending-artwork", async (req, res) => {
       try {
         const result = await artworkCollection
@@ -67,6 +67,25 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    // Premium Artworks
+
+    app.get("/premium-collection", async (req, res) => {
+      try {
+        // শুধু find() দিয়ে সব artworks নিয়ে আসবে
+        const allArtworks = await artworkCollection.find().toArray();
+
+        // descending price order এবং top 5 select করা JS দিয়ে
+        const premiumArtworks = allArtworks
+          .sort((a, b) => (b.price || 0) - (a.price || 0)) // price missing হলে 0 ধরে নেবে
+          .slice(0, 5); // top 5
+
+        res.send(premiumArtworks);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Could not fetch premium artworks" });
       }
     });
 
