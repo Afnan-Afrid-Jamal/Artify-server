@@ -71,16 +71,14 @@ async function run() {
     });
 
     // Premium Artworks
-
     app.get("/premium-collection", async (req, res) => {
       try {
-        // শুধু find() দিয়ে সব artworks নিয়ে আসবে
         const allArtworks = await artworkCollection.find().toArray();
 
-        // descending price order এবং top 5 select করা JS দিয়ে
         const premiumArtworks = allArtworks
-          .sort((a, b) => (b.price || 0) - (a.price || 0)) // price missing হলে 0 ধরে নেবে
-          .slice(0, 5); // top 5
+          .filter((art) => art.price > 0)
+          .sort((a, b) => b.price - a.price)
+          .slice(0, 6);
 
         res.send(premiumArtworks);
       } catch (err) {
