@@ -1,11 +1,17 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const admin = require("firebase-admin");
+const serviceAccount = require("./firebase_serviceKey.json");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const port = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 const uri =
   "mongodb+srv://artifyAdmin:nvAV4rTWZPNkidjG@cluster0.urzvqyi.mongodb.net/?appName=Cluster0";
@@ -18,6 +24,24 @@ const client = new MongoClient(uri, {
   },
 });
 
+// Firebase Auth Middleware
+const firebaseVerifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).send({ message: "Token missing!" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    await admin.auth().verifyIdToken(token);
+    next();
+  } catch (err) {
+    return res.status(401).send({ message: "Invalid token!" });
+  }
+};
+
 async function run() {
   try {
     await client.connect();
@@ -28,7 +52,7 @@ async function run() {
 
     // Get Data(all artworks)
 
-    app.get("/all-artworks", async (req, res) => {
+    app.get("/all-artworks", firebaseVerifyToken, async (req, res) => {
       try {
         const result = await artworkCollection.find().toArray();
         res.status(200).json(result);
@@ -89,7 +113,7 @@ async function run() {
 
     // Explore artworks (public)
 
-    app.get("/all-artworks/public", async (req, res) => {
+    app.get("/all-artworks/public", firebaseVerifyToken, async (req, res) => {
       try {
         const result = await artworkCollection
           .find({ visibility: "Public" })
@@ -103,7 +127,7 @@ async function run() {
 
     // Search by title API
 
-    app.get("/all-artworks/search", async (req, res) => {
+    app.get("/all-artworks/search", firebaseVerifyToken, async (req, res) => {
       const searchedText = req.query.search;
       const result = await artworkCollection
         .find({ title: { $regex: searchedText, $options: "i" } })
@@ -112,7 +136,7 @@ async function run() {
     });
 
     // Add Favourite
-    app.post("/favourites", async (req, res) => {
+    app.post("/favourites", firebaseVerifyToken, async (req, res) => {
       try {
         const data = req.body;
         const result = await favouritesCollection.insertOne(data);
@@ -127,7 +151,7 @@ async function run() {
     });
 
     // Get Favourites Data
-    app.get("/favourites-data", async (req, res) => {
+    app.get("/favourites-data", firebaseVerifyToken, async (req, res) => {
       try {
         const email = req.query.email;
         const result = await favouritesCollection
@@ -145,7 +169,7 @@ async function run() {
 
     // Unfavourite artwork
 
-    app.delete("/unfavourite/:id", async (req, res) => {
+    app.delete("/unfavourite/:id", firebaseVerifyToken, async (req, res) => {
       try {
         const { id } = req.params;
         const result = await favouritesCollection.deleteOne({
@@ -173,44 +197,48 @@ async function run() {
 
     // Add Artworks
 
-    app.post("/all-artworks", async (req, res) => {
+    app.post("/all-artworks", firebaseVerifyToken, async (req, res) => {
       const artworkData = req.body;
       const result = await artworkCollection.insertOne(artworkData);
       res.send(result);
     });
 
     // Delete Artworks
-    app.delete("/delete-artworks/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        const result = await artworkCollection.deleteOne({
-          _id: new ObjectId(id),
-        });
-
-        if (result.deletedCount === 1) {
-          res.status(200).send({
-            success: true,
-            message: "Artwork deleted successfully",
+    app.delete(
+      "/delete-artworks/:id",
+      firebaseVerifyToken,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const result = await artworkCollection.deleteOne({
+            _id: new ObjectId(id),
           });
-        } else {
-          res.status(404).send({
+
+          if (result.deletedCount === 1) {
+            res.status(200).send({
+              success: true,
+              message: "Artwork deleted successfully",
+            });
+          } else {
+            res.status(404).send({
+              success: false,
+              message: "Artwork not found",
+            });
+          }
+        } catch (error) {
+          console.error(error);
+          res.status(500).send({
             success: false,
-            message: "Artwork not found",
+            message: "Failed to delete artwork",
+            error: error.message,
           });
         }
-      } catch (error) {
-        console.error(error);
-        res.status(500).send({
-          success: false,
-          message: "Failed to delete artwork",
-          error: error.message,
-        });
       }
-    });
+    );
 
     // Update Artwork
 
-    app.put("/update-artwork/:id", async (req, res) => {
+    app.put("/update-artwork/:id", firebaseVerifyToken, async (req, res) => {
       const { id } = req.params;
       const data = req.body;
       const objectId = { _id: new ObjectId(id) };
@@ -224,7 +252,7 @@ async function run() {
     // Get Data(view details)
     const { ObjectId } = require("mongodb");
 
-    app.get("/all-artworks/:id", async (req, res) => {
+    app.get("/all-artworks/:id", firebaseVerifyToken, async (req, res) => {
       try {
         const { id } = req.params;
 
@@ -249,7 +277,7 @@ async function run() {
 
     // My Gallery
 
-    app.get("/my-gallery", async (req, res) => {
+    app.get("/my-gallery", firebaseVerifyToken, async (req, res) => {
       try {
         const email = req.query.email;
         const result = await artworkCollection
@@ -265,30 +293,37 @@ async function run() {
       }
     });
 
-    app.patch("/all-artworks/:id/like", async (req, res) => {
-      try {
-        const id = req.params.id;
-        const { action } = req.body; // "inc" or "dec"
+    // Like increase, decrease
 
-        if (!ObjectId.isValid(id))
-          return res.status(400).json({ message: "Invalid ID" });
+    app.patch(
+      "/all-artworks/:id/like",
+      firebaseVerifyToken,
+      async (req, res) => {
+        try {
+          const id = req.params.id;
+          const { action } = req.body;
 
-        const value = action === "dec" ? -1 : 1;
+          if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid ID" });
+          }
 
-        const result = await artworkCollection.findOneAndUpdate(
-          { _id: new ObjectId(id) },
-          { $inc: { likesCount: value } },
-          { returnDocument: "after" }
-        );
+          const change = action === "dec" ? -1 : 1;
 
-        if (!result)
-          return res.status(404).json({ message: "Artwork not found" });
+          const updated = await artworkCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $inc: { likesCount: change } }
+          );
 
-        res.status(200).json(result);
-      } catch (error) {
-        res.status(500).json({ message: "Server error" });
+          if (updated.matchedCount === 0) {
+            return res.status(404).json({ message: "Artwork not found" });
+          }
+
+          res.send({ success: true });
+        } catch (err) {
+          res.status(500).json({ message: "Server error" });
+        }
       }
-    });
+    );
 
     await client.db("admin").command({ ping: 1 });
     console.log(
