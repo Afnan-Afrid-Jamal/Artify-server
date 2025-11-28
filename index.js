@@ -113,7 +113,7 @@ async function run() {
 
     // Explore artworks (public)
 
-    app.get("/all-artworks/public", firebaseVerifyToken, async (req, res) => {
+    app.get("/all-artworks/public", async (req, res) => {
       try {
         const result = await artworkCollection
           .find({ visibility: "Public" })
@@ -127,7 +127,7 @@ async function run() {
 
     // Search by title API
 
-    app.get("/all-artworks/search", firebaseVerifyToken, async (req, res) => {
+    app.get("/all-artworks/search", async (req, res) => {
       const searchedText = req.query.search;
       const result = await artworkCollection
         .find({ title: { $regex: searchedText, $options: "i" } })
@@ -325,7 +325,7 @@ async function run() {
       }
     );
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
