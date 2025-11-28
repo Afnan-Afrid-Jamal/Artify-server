@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const admin = require("firebase-admin");
+require("dotenv").config();
 const serviceAccount = require("./firebase_serviceKey.json");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const port = 3000;
@@ -13,8 +14,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-const uri =
-  "mongodb+srv://artifyAdmin:nvAV4rTWZPNkidjG@cluster0.urzvqyi.mongodb.net/?appName=Cluster0";
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.urzvqyi.mongodb.net/?appName=Cluster0`;
 
 const client = new MongoClient(uri, {
   serverApi: {
