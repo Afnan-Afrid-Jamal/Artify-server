@@ -44,7 +44,7 @@ const firebaseVerifyToken = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const database = client.db("artifyDB");
     const artworkCollection = database.collection("artworks");
@@ -334,6 +334,10 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+app.get("/", (req, res) => {
+  res.send({ message: "server is running" });
+});
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
