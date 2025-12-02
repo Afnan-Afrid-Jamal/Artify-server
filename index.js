@@ -24,7 +24,7 @@ const client = new MongoClient(uri, {
   },
 });
 
-// Firebase Auth Middleware
+// Firebase Auth Middleware Function
 const firebaseVerifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
