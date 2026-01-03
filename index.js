@@ -49,6 +49,8 @@ async function run() {
     const database = client.db("artifyDB");
     const artworkCollection = database.collection("artworks");
     const favouritesCollection = database.collection("favouritesArtworks");
+    const blogsCollection = database.collection("blogs");
+    const feedbackCollection = database.collection("AnonymousFeedback");
 
     // Get Data(all artworks)
 
@@ -84,7 +86,7 @@ async function run() {
         const result = await artworkCollection
           .find({})
           .sort({ createdAt: -1 })
-          .limit(6)
+          .limit(8)
           .toArray();
 
         res.status(200).json(result);
@@ -102,7 +104,7 @@ async function run() {
         const premiumArtworks = allArtworks
           .filter((art) => art.price > 0)
           .sort((a, b) => b.price - a.price)
-          .slice(0, 6);
+          .slice(0, 8);
 
         res.send(premiumArtworks);
       } catch (err) {
@@ -167,7 +169,7 @@ async function run() {
       }
     });
 
-    // Unfavourite artwork
+    // Unfavorite artwork
 
     app.delete("/unfavourite/:id", firebaseVerifyToken, async (req, res) => {
       try {
@@ -252,7 +254,7 @@ async function run() {
     // Get Data(view details)
     const { ObjectId } = require("mongodb");
 
-    app.get("/all-artworks/:id", firebaseVerifyToken, async (req, res) => {
+    app.get("/all-artworks/:id", async (req, res) => {
       try {
         const { id } = req.params;
 
@@ -293,6 +295,57 @@ async function run() {
       }
     });
 
+    // Blogs
+
+    // Get Blogs
+    app.get("/blogs", async (req, res) => {
+      try {
+        const result = await blogsCollection.find().toArray();
+        res.status(200).send({ success: true, data: result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({
+          success: false,
+          message: "Failed to fetch Blogs page data",
+        });
+      }
+    });
+    // Get Six Blogs
+    app.get("/eightBlogs", async (req, res) => {
+      try {
+        const result = await blogsCollection.find().limit(8).toArray();
+        res.status(200).send({ success: true, data: result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({
+          success: false,
+          message: "Failed to fetch Blogs page data",
+        });
+      }
+    });
+
+    // Get Single Blog Details
+    app.get("/blogs/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const query = { _id: new ObjectId(id) }; // 'objectId' kotha-ti 'ObjectId' hobe (O capital)
+        const result = await blogsCollection.findOne(query);
+
+        if (!result) {
+          return res
+            .status(404)
+            .send({ success: false, message: "Blog not found" });
+        }
+
+        res.status(200).send({ success: true, data: result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({
+          success: false,
+          message: "Failed to fetch Blog Details data",
+        });
+      }
+    });
     // Like increase, decrease
 
     app.patch(
@@ -324,6 +377,21 @@ async function run() {
         }
       }
     );
+
+    // Add Feedback
+    app.post("/feedbacks", async (req, res) => {
+      try {
+        const data = req.body;
+        const result = await feedbackCollection.insertOne(data);
+        res.status(201).send({ success: true, insertedId: result.insertedId });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({
+          success: false,
+          message: "Failed to add to feedbacks",
+        });
+      }
+    });
 
     // await client.db("admin").command({ ping: 1 });
     console.log(
